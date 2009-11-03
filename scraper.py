@@ -6,19 +6,35 @@ import MySQLdb
 
 class Job():
 	def __init__(self, title, closingDate, agency, location, salary, details, vacancy, apply, plan, appointmentTerm, jobStatus, openingDate, salaryRange):
-		self.title = title[0].encode('utf-8').replace('\n','')
-		self.closingDate = closingDate[0].encode('utf-8').replace('\n','')
-		self.agency = agency[0].encode('utf-8').replace('\n','')
-		self.location = location[0].encode('utf-8').replace('\n','')
-		self.salary = salary[0].encode('utf-8').replace('\n','')
-		self.details = details[0].encode('utf-8').replace('\n','')
-		self.vacancy = vacancy[0].encode('utf-8').replace('\n','')
-		self.apply = apply[0].encode('utf-8').replace('\n','')
-		self.plan = plan[0].encode('utf-8').replace('\n','')
-		self.appointmentTerm = appointmentTerm[0].encode('utf-8').replace('\n','')
-		self.jobStatus = jobStatus[0].encode('utf-8').replace('\n','')
-		self.openingDate = openingDate[0].encode('utf-8').replace('\n','')
-		self.salaryRange = salaryRange[0].encode('utf-8').replace('\n','')
+		try:
+			self.title = title[0].encode('utf-8').replace('\n','')
+			self.closingDate = closingDate[0].encode('utf-8').replace('\n','')
+			self.agency = agency[0].encode('utf-8').replace('\n','')
+			self.location = location[0].encode('utf-8').replace('\n','')
+			self.salary = salary[0].encode('utf-8').replace('\n','')
+			self.details = details[0].encode('utf-8').replace('\n','')
+			self.vacancy = vacancy[0].encode('utf-8').replace('\n','')
+			self.apply = apply[0].encode('utf-8').replace('\n','')
+			self.plan = plan[0].encode('utf-8').replace('\n','')
+			self.appointmentTerm = appointmentTerm[0].encode('utf-8').replace('\n','')
+			self.jobStatus = jobStatus[0].encode('utf-8').replace('\n','')
+			self.openingDate = openingDate[0].encode('utf-8').replace('\n','')
+			self.salaryRange = salaryRange[0].encode('utf-8').replace('\n','')
+		except Exception, e:
+			self.title = ""
+			self.closingDate = ""
+			self.agency = ""
+			self.location = ""
+			self.salary = ""
+			self.details = ""
+			self.vacancy = ""
+			self.apply = ""
+			self.plan = ""
+			self.appointmentTerm = ""
+			self.jobStatus = ""
+			self.openingDate = ""
+			self.salaryRange = ""
+		
 		
 	def __str__(self):
 		return "%s -> %s" % (self.title, self.vacancy) 
@@ -76,6 +92,7 @@ def scrapePage():
 def getResults(rtype):
 	
 	def getMeta(type, title):
+		print "fetching ", title
 		re0='MasterPage1_middleContent__ctlResultsFlat_rptResults__ctl(\d)(\d)?_%s$' % (title)
 		rg = re.compile(re0,re.IGNORECASE|re.DOTALL)
 		return soup.findAll(type, { 'id' : rg})
@@ -97,7 +114,7 @@ def getResults(rtype):
 	
 if __name__ == '__main__':
 	for job in scrapePage():
-		print "Storing %s..." $ (job.title)
+		print "Storing %s..." % (job.title)
 		job.store()
 		# print len(job)
 	# for t in ['title', 'closingDate', 'agency', 'location', 'salary', 'details', 'vacancy', 'apply', 'plan', 'appointmentTerm', 'jobStatus', 'openingDate', 'salaryRange']:
