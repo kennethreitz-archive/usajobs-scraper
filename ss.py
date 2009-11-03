@@ -4,50 +4,87 @@ import re
 import urllib
 
 class Job():
-	def __init__(self, title, closingDate, agency, location, salary):
+	def __init__(self, title="", closingDate="", agency="", location="", salary=""):
 		self.title = title
 		self.closingDate = closingDate
 		self.agency = agency
 		self.location = location
 		self.salary = salary
+		# self.details = details
 	def __str__(self):
-		return str(self.title) + str(self.agency) + str(self.salary) 
+		return str(self.title)  
 
 # html = urllib.urlopen('http://jobsearch.usajobs.gov/search.aspx').read() 	# INERNET 
-html = open('./search.aspx').read() 	# LOCAL
-
+# html = open('./search.html').read() 	# LOCAL
+html = open('./pages/output').read() 	# LOCAL
 soup = BeautifulSoup(''.join(html))
 
-
 def scrapePage():
-	b = [getResults('title'), getResults('closingDate'), getResults('agency'), getResults('location'), getResults('salary')]
-	resultSet = []
+	b, resultSet = [], []	# Initiate Collectors
+	types = ['title', 'closingDate', 'agency', 'location', 'salary', 'details']
+	for type in types:
+		b.append(getResults(type))
+
 	for i in range(len(b[0])):
-		resultSet.append(Job(title=b[0][i].contents, closingDate=b[1][i].contents, agency=b[2][i].contents, location=b[3][i].contents, salary=b[4][i].contents))
-	
+		toAppend = []
+		for j in range(len(b)):
+			toAppend.append(b[j][i].contents)
+		resultSet.append(toAppend)
+
 	return resultSet
 
 def getResults(rtype):
-	if	rtype == 'title':
+	def getTitles():
 		rType = 'a'
 		rTitle = 'lnkTitle'
-	elif	rtype == 'closingDate':
+		re0='MasterPage1_middleContent__ctlResultsFlat_rptResults__ctl(\d)(\d)?_%s$' % (rTitle)
+		rg = re.compile(re0,re.IGNORECASE|re.DOTALL)
+		return soup.findAll(rType, { 'id' : rg})
+		
+	def getClosingDates():
 		rType = 'span'
 		rTitle = 'lblDateMiles'
-	elif	rtype == 'agency':
+		re0='MasterPage1_middleContent__ctlResultsFlat_rptResults__ctl(\d)(\d)?_%s$' % (rTitle)
+		rg = re.compile(re0,re.IGNORECASE|re.DOTALL)
+		return soup.findAll(rType, { 'id' : rg})
+		
+	def getAgencies():
 		rType = 'span'
 		rTitle = 'lblCompany'
-	elif	rtype == 'location':
+		re0='MasterPage1_middleContent__ctlResultsFlat_rptResults__ctl(\d)(\d)?_%s$' % (rTitle)
+		rg = re.compile(re0,re.IGNORECASE|re.DOTALL)
+		return soup.findAll(rType, { 'id' : rg})
+		
+	def getLocations():
 		rType = 'span'
 		rTitle = 'lblArea'
-	elif	rtype == 'salary':
+		re0='MasterPage1_middleContent__ctlResultsFlat_rptResults__ctl(\d)(\d)?_%s$' % (rTitle)
+		rg = re.compile(re0,re.IGNORECASE|re.DOTALL)
+		return soup.findAll(rType, { 'id' : rg})
+	
+	def getSalaries():
 		rType = 'span'
 		rTitle = 'lblSalary'
-		
-	re0='MasterPage1_middleContent__ctlResultsFlat_rptResults__ctl(\d)(\d)?_%s$' % (rTitle)
-	rg = re.compile(re0,re.IGNORECASE|re.DOTALL)
-	return soup.findAll(rType, { 'id' : rg})
+		re0='MasterPage1_middleContent__ctlResultsFlat_rptResults__ctl(\d)(\d)?_%s$' % (rTitle)
+		rg = re.compile(re0,re.IGNORECASE|re.DOTALL)
+		return soup.findAll(rType, { 'id' : rg})
+			
+	def getDetails():
+		rType = 'div'
+		rTitle = 'jobDetailBodyDiv'
+		re0='MasterPage1_middleContent__ctlResultsFlat_rptResults__ctl(\d)(\d)?_%s$' % (rTitle)
+		rg = re.compile(re0,re.IGNORECASE|re.DOTALL)
+		content = soup.findAll(rType, { 'id' : rg})
+
+	if	   rtype == 'title': 		return getTitles()
+	elif	rtype == 'closingDate':	return getTitles()
+	elif	rtype == 'agency': 		return getTitles()
+	elif	rtype == 'location': 	return getTitles()
+	elif	rtype == 'salary':		return getTitles()
+	elif	rtype == 'details':		return getTitles()
 	
 if __name__ == '__main__':
 	for job in scrapePage():
 		print job
+	
+	
