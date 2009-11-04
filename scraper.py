@@ -4,119 +4,183 @@ import re
 import urllib
 import MySQLdb
 
+fields = ['id', 'title', 'closingDate', 'agency', 'locationCity', 'locationState', 'locationCountry', 'salary', 'details', 'vacancy', 'apply', 'plan', 'appointmentTerm', 'jobStatus', 'openingDate']
+sqlfields = map(snake_case, fields[:])
+
+# Open up output file
+html = open('./output').read() 	# LOCAL
+soup = BeautifulSoup(''.join(html))
+
 class Job():
-	def __init__(self, title, closingDate, agency, location, salary, details, vacancy, apply, plan, appointmentTerm, jobStatus, openingDate, salaryRange):
+	def __init__(self, id, title, closingDate, agency, locationCity, locationState, locationCountry, salary, details, vacancy, apply, plan, appointmentTerm, jobStatus, openingDate):
 		try:
-			self.title = title[0].encode('utf-8').replace('\n','')
-			self.closingDate = closingDate[0].encode('utf-8').replace('\n','')
-			self.agency = agency[0].encode('utf-8').replace('\n','')
-			self.location = location[0].encode('utf-8').replace('\n','')
-			self.salary = salary[0].encode('utf-8').replace('\n','')
-			self.details = details[0].encode('utf-8').replace('\n','')
-			self.vacancy = vacancy[0].encode('utf-8').replace('\n','')
-			self.apply = apply[0].encode('utf-8').replace('\n','')
-			self.plan = plan[0].encode('utf-8').replace('\n','')
-			self.appointmentTerm = appointmentTerm[0].encode('utf-8').replace('\n','')
-			self.jobStatus = jobStatus[0].encode('utf-8').replace('\n','')
-			self.openingDate = openingDate[0].encode('utf-8').replace('\n','')
-			self.salaryRange = salaryRange[0].encode('utf-8').replace('\n','')
-		except Exception, e:
-			self.title = ""
-			self.closingDate = ""
-			self.agency = ""
-			self.location = ""
-			self.salary = ""
-			self.details = ""
-			self.vacancy = ""
-			self.apply = ""
-			self.plan = ""
-			self.appointmentTerm = ""
-			self.jobStatus = ""
-			self.openingDate = ""
-			self.salaryRange = ""
+			self.id = id
+			self.title = title
+			self.closingDate = closingDate
+			self.agency = agency
+			# self.location = ', '.join(location)
+			self.locationCity = locationCity
+			self.locationState = locationState
+			self.locationCountry = locationCountry
+			self.salary = salary
+			self.details = details
+			self.vacancy = vacancy
+			self.apply = apply
+			self.plan = plan
+			self.appointmentTerm = appointmentTerm
+			self.jobStatus = jobStatus
+			self.openingDate = openingDate
 		
+		except Exception, e:
+			del self
 		
 	def __str__(self):
 		return "%s -> %s" % (self.title, self.vacancy) 
 		
 	def store(self):
-		conn = MySQLdb.connect(host="kennethreitz.com", user="admin", passwd="drummer42", db="scraper")
+		conn = MySQLdb.connect(host="localhost", user="admin", passwd="drummer42", db="scraper")
 		cursor = conn.cursor ()
-		# title, closingDate, agency, location, salary, details, vacancy, apply, plan, appointmentTerm, jobStatus, openingDate, salaryRange
-		query = "INSERT INTO jobs (title, closing_date, agency, location, salary, details, vacancy, apply, plan, appointment_term, job_status, opening_date, salary_range) " + \
-		"VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s )" % \
-		(conn.literal(self.title), conn.literal(self.closingDate), 
-		 conn.literal(self.agency), conn.literal(self.location), 
-		 conn.literal(self.salary), conn.literal(self.details), 
-		 conn.literal(self.vacancy), conn.literal(self.apply), 
-		 conn.literal(self.plan), conn.literal(self.appointmentTerm),
-		 conn.literal(self.jobStatus), conn.literal(self.openingDate), 
-		 conn.literal(self.salaryRange))
+		query = "INSERT INTO jobs (%s) " % (', '.join(sqlfields))+ \
+		"VALUES (%s )" % \
+			', '.join(conn.literal(f) for f in 
+				[self.id, self.title, self.closingDate, 
+					self.agency, self.locationCity, self.locationState, self.locationCountry,
+					self.salary, self.details,
+					self.vacancy, self.apply,
+					self.plan, self.appointmentTerm,
+					self.jobStatus, self.openingDate ])
 		cursor.execute (query)
 		cursor.close ()
 		conn.close ()
+		del self
 		
 	def inspect(self):
-		print self.title
-		print self.closingDate
-		print self.agency
-		print self.location
-		print self.salary
-		print self.details
-		print self.vacancy
-		print self.apply
-		print self.plan
-		print self.appointmentTerm
-		print self.jobStatus
-		print self.openingDate
-		print self.salaryRange
-		print '\n' * 4
-		
-html = open('./output').read() 	# LOCAL
-soup = BeautifulSoup(''.join(html))
+		print self.title, self.id
 
 def scrapePage():
-	b = [getResults('title'), getResults('closingDate'), getResults('agency'), getResults('location'), getResults('salary'), getResults('details'), getResults('vacancy'), getResults('apply'), getResults('plan'), getResults('appointmentTerm'), getResults('jobStatus'), getResults('openingDate'), getResults('salaryRange')]
+	b = map(getResults, fields)
 	resultSet = []
-	for i in range(len(b[0])):
-		newJob 	= 	Job(	b[0][i].contents, b[1][i].contents, b[2][i].contents, 
-								b[3][i].contents, b[4][i].contents, b[5][i].contents, 
-								b[6][i].contents, b[7][i].contents, b[8][i].contents, 
-								b[9][i].contents, b[10][i].contents, b[11][i].contents, 
-								b[12][i].contents
-							 )
+	for i in qrange(len(fields)):
+		newJob = Job(*[b[j][i] for j in qrange(len(fields))])
+		del b
 		resultSet.append(newJob)
+		del newJob
 		
 	return resultSet
 
 def getResults(rtype):
 	
 	def getMeta(type, title):
-		print "fetching ", title
+		print "fetching " + title + "s"
 		re0='MasterPage1_middleContent__ctlResultsFlat_rptResults__ctl(\d)(\d)?_%s$' % (title)
 		rg = re.compile(re0,re.IGNORECASE|re.DOTALL)
 		return soup.findAll(type, { 'id' : rg})
+	
+	def scrub(dirty, meta = 'contents'):
+		if meta == 'contents':
+			for i in qrange(len(dirty)):
+				dirty[i] = dirty[i].contents[0].replace('\n','')
+			clean = utf8ify(dirty)
+			
+		elif meta == 'href':
+			for i in qrange(len(dirty)):
+				dirty[i] = dirty[i]['href']
+			clean = utf8ify(dirty)
+			
+		return clean
+		
+	# begin proccessing
 
-	if	  rtype == 'title': 	  			return getMeta('a', 'lnkTitle')
-	elif rtype == 'closingDate':		return getMeta('span', 'lblDateMiles')
-	elif rtype == 'agency': 	  		return getMeta('span', 'lblCompany')
-	elif rtype == 'location':   		return getMeta('span', 'lblArea')
-	elif rtype == 'salary':	  			return getMeta('span', 'lblSalary')
-	elif rtype == 'details':	  		return getMeta('div', 'jobDetailBodyDiv')
-	elif rtype == 'vacancy':	  		return getMeta('span', 'lblVacancyAnnNumber')
-	elif rtype == 'apply':		  		return getMeta('span', 'lblWhoMayApply')
-	elif rtype == 'plan':		  		return getMeta('span', 'lblPayPlan')
-	elif rtype == 'appointmentTerm':	return getMeta('span', 'lblAppointmentTerm')
-	elif rtype == 'jobStatus':			return getMeta('span', 'lblJobStatus')
-	elif rtype == 'openingDate':		return getMeta('span', 'lblOpeningDate')
-	elif rtype == 'salaryRange':		return getMeta('span', 'lblSalaryRange')
+	if rtype == 'id':
+		results = scrub(getMeta('a', 'lnkTitle'), 'href')
+		for i in qrange(len(results)):
+			results[i] = results[i][45:52]
+		
+	elif	rtype == 'title':
+		results = scrub(getMeta('a', 'lnkTitle'))
+		
+	elif rtype == 'closingDate':		
+		results = scrub(getMeta('span', 'lblDateMiles'))
+		
+	elif rtype == 'agency': 	  		
+		results = scrub(getMeta('span', 'lblCompany'))
 	
+	elif rtype == 'location':
+		results = scrub(getMeta('span', 'lblArea'))
+		results = [item.split('-') for item in results]
+		
+	elif rtype == 'locationCity':
+		results = scrub(getMeta('span', 'lblArea'))
+		results = [item.split('-') for item in results]
+		for i in range(len(results)):
+			try:
+				results[i] = results[i][2]
+			except Exception, e:
+				results[i] = results[i][1]
+			
+			
+	elif rtype == 'locationState':		
+		results = scrub(getMeta('span', 'lblArea'))
+		results = [item.split('-') for item in results]
+		for i in range(len(results)):
+			results[i] = results[i][1]
+			
+	elif rtype == 'locationCountry':		
+		results = scrub(getMeta('span', 'lblArea'))
+		results = [item.split('-') for item in results]
+		for i in range(len(results)):
+			results[i] = results[i][0]
+
+	elif rtype == 'salaryRange':		
+		results = scrub(getMeta('span', 'lblArea'))
+		
+	elif rtype == 'salary':
+		results = scrub(getMeta('span', 'lblSalary'))
+		results = [item.replace(',', '').replace('$', '').replace('+', '').replace('.00', '') for item in results]
+
+	elif rtype == 'details':	  		
+		results = scrub(getMeta('div', 'jobDetailBodyDiv'))
+		
+	elif rtype == 'vacancy':	  		
+		results = scrub(getMeta('span', 'lblVacancyAnnNumber'))
+		
+	elif rtype == 'apply':		  		
+		results = scrub(getMeta('span', 'lblWhoMayApply'))
+		
+	elif rtype == 'plan':		  		
+		results = scrub(getMeta('span', 'lblPayPlan'))
+		
+	elif rtype == 'appointmentTerm':	
+		results = scrub(getMeta('span', 'lblAppointmentTerm'))
+		
+	elif rtype == 'jobStatus':			
+		results = scrub(getMeta('span', 'lblJobStatus'))
+		
+	elif rtype == 'openingDate':		
+		results = scrub(getMeta('span', 'lblOpeningDate'))
+		
+	elif rtype == 'salaryRange':		
+		results = scrub(getMeta('span', 'lblSalaryRange'))
 	
+	else:
+		raise NameError
+		
+	return results
+
+def clearDB():
+	print "clearing DB"
+	conn = MySQLdb.connect(host="localhost", user="admin", passwd="drummer42", db="scraper")
+	cursor = conn.cursor ()
+	cursor.execute ("TRUNCATE TABLE jobs")
+	cursor.close ()
+	conn.close ()
+	
+
+
 if __name__ == '__main__':
+	clearDB()
 	for job in scrapePage():
-		print "Storing %s..." % (job.title)
+		print "Storing: %s" % job.title
 		job.store()
-		# print len(job)
-	# for t in ['title', 'closingDate', 'agency', 'location', 'salary', 'details', 'vacancy', 'apply', 'plan', 'appointmentTerm', 'jobStatus', 'openingDate', 'salaryRange']:
-		# print getResults(t)[0].contents[0].encode('utf-8').replace('\n','')
-		# print '>'
+	
+	# print getResults('salary')
